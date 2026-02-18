@@ -2,21 +2,21 @@
 import { useState, useEffect } from 'react'
 import { languages } from './languages'
 import clsx from 'clsx'
-import { getFarewellText } from './utils'
+import { getFarewellText,getWord } from './utils'
 
 
 function App() {
   // State values
-  const [currentWord, setCurrentWord] = useState("react")
+  const [currentWord, setCurrentWord] = useState(()=>getWord())
   const [guessedLetters, setGuessedLetters] = useState([])
   const [farewellText, setFarewellText] = useState("")
   //console.log(guessedLetters)
 
   // Derived values
   const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(letter)).length
- 
+
   //check if the last guessed letter is wrong to show the farewell message
-  const lastGuessedLetter = guessedLetters[guessedLetters.length -1]
+  const lastGuessedLetter = guessedLetters[guessedLetters.length - 1]
   const isLastGuessedLetterWrong = lastGuessedLetter && !currentWord.includes(lastGuessedLetter)
   //console.log(wrongGuessCount)
 
@@ -28,13 +28,20 @@ function App() {
   // Static values
   const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-    useEffect(()=>{
-      if(isLastGuessedLetterWrong){
-    const lang = languages[wrongGuessCount-1].name
-     setFarewellText( getFarewellText(lang))
-      }
-  },[wrongGuessCount])
-  
+
+    function handleNewGame(){
+      setCurrentWord(getWord())
+      setGuessedLetters([])
+  }
+
+
+  useEffect(() => {
+    if (isLastGuessedLetterWrong) {
+      const lang = languages[wrongGuessCount - 1].name
+      setFarewellText(getFarewellText(lang))
+    }
+  }, [wrongGuessCount])
+
 
   function handleGussedLetters(letter) {
     setGuessedLetters(prevLetters =>
@@ -74,10 +81,17 @@ function App() {
     const isCorrect = isGuessed && currentWord.includes(letter)
     const isWrong = isGuessed && !currentWord.includes(letter)
     const className = clsx(isCorrect && 'right', isWrong && 'wrong')
+
     return <button
       key={index}
       onClick={() => handleGussedLetters(letter)}
-      className={className}>
+      className={className}
+      //disabled={gussedLetters.includes(letter) || isGameOver} //disable button if letter is already guessed or game is over
+      disabled={isGameOver}
+      aria-label={`letter is ${letter}, ${isCorrect ? "correct" : isWrong ? "wrong" : "not guessed yet"}`}
+      aria-disabled={guessedLetters.includes(letter) || isGameOver}
+    >
+
       {letter.toLocaleUpperCase()}
     </button>
   }
@@ -85,22 +99,22 @@ function App() {
   )
 
   //game status section classes and content
-   const gameStatusClass = clsx("game-status", isGameWon&&"won", isGameLost&&"lost")
+  const gameStatusClass = clsx("game-status", isGameWon && "won", isGameLost && "lost", !isGameOver && isLastGuessedLetterWrong && "farewell")
 
-   const gameStatuscontent = isGameOver? (isGameWon?
-            (<>
-              <h2>You win!</h2>
-              <p>Well done!🎉</p>
-            </>
-            ):
-            (<>
-              <h2>Game over!</h2>
-              <p>You lose! Better luck next time😭</p>
-            </>
-            )
-          )
-        : isLastGuessedLetterWrong&&(<p className="farewell-message">{farewellText}</p>)  
-      
+  const gameStatuscontent = isGameOver ? (isGameWon ?
+    (<>
+      <h2>You win!</h2>
+      <p>Well done!🎉</p>
+    </>
+    ) :
+    (<>
+      <h2>Game over!</h2>
+      <p>You lose! Better luck next time😭</p>
+    </>
+    )
+  )
+    : isLastGuessedLetterWrong && (<p className="farewell-message">{farewellText}</p>)
+
 
   return (
     <main>
@@ -108,9 +122,9 @@ function App() {
         <h1>Word Guessing Game</h1>
         <p>Guess the word within 8 attempts to keep the programming world safe!</p>
       </header>
-      <section className={gameStatusClass}>
+      <section className={gameStatusClass} aria-live="polite" role="status">
         {gameStatuscontent}
-        
+
       </section>
 
       <section className='languages-container'>
@@ -120,10 +134,23 @@ function App() {
         {wordElements}
       </section>
 
+
+      {/* sr-only section for screen readers to announce the current game status and word state */}
+      <section className='sr-only' araia-live="polite" role="status">
+        <p>
+          {currentWord.includes(lastGuessedLetter) ? `Correct guess: ${lastGuessedLetter}` : `Wrong guess: ${lastGuessedLetter}`}
+          You have made {wrongGuessCount} wrong guesses out of {languages.length}.
+        </p>
+
+        <p>Current word: {currentWord.split("").map(letter =>
+          guessedLetters.includes(letter) ? letter + "." : "blank.")
+          .join(" ")}</p>
+      </section>
+
       <section className='alphabet-container'>
         {alphabetElements}
       </section>
-      {isGameOver && <button className="new-game">New Game</button>}
+      {isGameOver && <button className="new-game" onClick={handleNewGame}>New Game</button>}
 
 
     </main>
