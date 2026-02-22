@@ -2,12 +2,14 @@
 import { useState, useEffect } from 'react'
 import { languages } from './languages'
 import clsx from 'clsx'
-import { getFarewellText,getWord } from './utils'
+import { getFarewellText, getWord } from './utils'
+
+import Confetti from 'react-confetti'
 
 
 function App() {
   // State values
-  const [currentWord, setCurrentWord] = useState(()=>getWord())
+  const [currentWord, setCurrentWord] = useState(() => getWord())
   const [guessedLetters, setGuessedLetters] = useState([])
   const [farewellText, setFarewellText] = useState("")
   //console.log(guessedLetters)
@@ -24,14 +26,14 @@ function App() {
   const isGameWon = [...currentWord].every(l => guessedLetters.includes(l))
   const isGameLost = wrongGuessCount >= languages.length
   const isGameOver = isGameWon || isGameLost
-  console.log(isGameOver, isGameWon, isGameLost)
+  //console.log(isGameOver, isGameWon, isGameLost)
   // Static values
   const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 
-    function handleNewGame(){
-      setCurrentWord(getWord())
-      setGuessedLetters([])
+  function handleNewGame() {
+    setCurrentWord(getWord())
+    setGuessedLetters([])
   }
 
 
@@ -71,7 +73,9 @@ function App() {
   //To conver str to array use arr.split('') or [...str]
   const wordElements = [...currentWord].map((letter, index) =>
     <span className='letter-box' key={index}>
-      {guessedLetters.includes(letter) ? letter.toUpperCase() : " "}
+      {isGameLost || guessedLetters.includes(letter) ? letter.toUpperCase() : ""}
+      {/* if gamelost & not guessed letter& in word letter, then show the letter */}
+      {/* {isGameLost &&!guessedLetters.includes(letter) &&currentWord.includes(letter)? letter.toUpperCase():""} */}
     </span>)
 
 
@@ -80,7 +84,8 @@ function App() {
     const isGuessed = guessedLetters.includes(letter)
     const isCorrect = isGuessed && currentWord.includes(letter)
     const isWrong = isGuessed && !currentWord.includes(letter)
-    const className = clsx(isCorrect && 'right', isWrong && 'wrong')
+    //if letter correct--> green, if letter is wrong--> red, if gamelost and letter is in word and not guessed, then show wrong class to indicate that the player missed this letter
+    const className = clsx(isCorrect && 'right', isWrong && 'wrong', isGameLost && !isGuessed && currentWord.includes(letter) && 'wrong')
 
     return <button
       key={index}
@@ -100,11 +105,14 @@ function App() {
 
   //game status section classes and content
   const gameStatusClass = clsx("game-status", isGameWon && "won", isGameLost && "lost", !isGameOver && isLastGuessedLetterWrong && "farewell")
+  //const {width, height } = useWindowSize()
 
   const gameStatuscontent = isGameOver ? (isGameWon ?
     (<>
       <h2>You win!</h2>
       <p>Well done!🎉</p>
+
+
     </>
     ) :
     (<>
@@ -118,6 +126,10 @@ function App() {
 
   return (
     <main>
+     {isGameWon && <Confetti
+        width={window.innerWidth}
+        height={window.innerHeight}
+      />}
       <header>
         <h1>Word Guessing Game</h1>
         <p>Guess the word within 8 attempts to keep the programming world safe!</p>
